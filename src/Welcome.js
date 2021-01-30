@@ -17,10 +17,11 @@ Welcome = ({ route, navigation }) => {
 
         } catch (error) {
             console.error(error);
-        } navigation.navigate('Login')
+        }
+        navigation.navigate('Login')
         // setGettingLoginStatus(false);
     }
-    console.log(JSON.stringify(data))
+    console.log(JSON.stringify(data.user.uid))
     return (
         <View style={styles.container}>
             <View style={styles.header}>
