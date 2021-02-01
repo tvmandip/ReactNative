@@ -15,7 +15,7 @@ import {
   Text,
   StatusBar,
 } from 'react-native';
-import Login from './src/Login';
+import UserList from './src/UserList';
 import Navigation from './src/Navigation';
 
 const App = () => {

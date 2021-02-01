@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import auth, { firebase } from '@react-native-firebase/auth'
 import database from '@react-native-firebase/database';
+import AsyncStorage from '@react-native-community/async-storage';
 
 import {
     LoginButton,
@@ -24,6 +25,7 @@ import {
     GoogleSigninButton,
     statusCodes,
 } from '@react-native-community/google-signin';
+import Loader from './Loader';
 
 const Login = ({ navigation }) => {
 
@@ -35,7 +37,7 @@ const Login = ({ navigation }) => {
     const [userName, setUserName] = useState('');
     const [token, setToken] = useState('');
     const [profilePic, setProfilePic] = useState('');
-    const [isLoadding, setLoadding] = useState('');
+    const [Loadding, setLoadding] = useState(false);
     // const [response, set_response] = useState('');
 
     useEffect(() => {
@@ -45,7 +47,7 @@ const Login = ({ navigation }) => {
             offlineAccess: false,
             forceConsentPrompt: true
         });
-        // console.log(response.picture.data.url)
+
     })
 
 
@@ -55,7 +57,8 @@ const Login = ({ navigation }) => {
                 .createUserWithEmailAndPassword(email, password)
                 .then((res) => {
                     console.log(JSON.stringify(res))
-                    database()
+                    database().ref('/users').
+                        database()
                         .ref('/users')
                         .push({
                             name: Name,
@@ -93,23 +96,32 @@ const Login = ({ navigation }) => {
 
     const User_Login = () => {
         try {
+            setLoadding(true)
             auth()
                 .signInWithEmailAndPassword(email, password)
                 .then(res => {
-                    navigation.navigate('Welcome', { data: res })
+
+                    AsyncStorage.setItem('email', email);
+                    AsyncStorage.setItem('password', password);
+                    setLoadding(false)
+                    navigation.navigate('Welcome', { data: email })
+
                 })
                 .catch(error => {
                     if (error.code === 'auth/user-not-found') {
                         // console.log('That email address is invalid!');
                         alert('That User not Register !')
+                        setLoadding(false)
                     } else {
                         alert(error)
+                        setLoadding(false)
                     }
 
                     console.error(error);
                 });
         } catch (error) {
             alert(error.error)
+            setLoadding(false)
             console.log(error.toString(error));
         }
 
@@ -155,15 +167,28 @@ const Login = ({ navigation }) => {
             console.log('User Info --> ', userInfo);
             database()
                 .ref('/users')
-                .push({
-                    name: userInfo.user.name,
-                    email: userInfo.user.email,
-                    pic: userInfo.user.photo === null ? 'https://bootdey.com/img/Content/avatar/avatar6.png' : userInfo.user.photo,
-                    registre_type: 'google',
-                    userid: userInfo.user.id
-                }).then((userInfo) => console.log('Data set.', JSON.stringify(userInfo)));
-            console.log(Name + "  " + userInfo.user.email + "  " + userInfo.user.photoURL + "   " + userInfo.user.uid)
-            alert('User account created & signed in!')
+                .orderByChild("email")
+                .equalTo(email)
+                .once("value")
+                .then(snapshot => {
+                    if (snapshot.val()) {
+                        console.log("no")
+                        console.log(snapshot.val())
+                    } else {
+                        database()
+                            .ref('/users')
+                            .push({
+                                name: userInfo.user.name,
+                                email: userInfo.user.email,
+                                pic: userInfo.user.photo === null ? 'https://bootdey.com/img/Content/avatar/avatar6.png' : userInfo.user.photo,
+                                registre_type: 'google',
+                                userid: userInfo.user.id
+                            }).then((userInfo) => console.log('Data set.', JSON.stringify(userInfo)));
+                        console.log(Name + "  " + userInfo.user.email + "  " + userInfo.user.photoURL + "   " + userInfo.user.uid)
+                        alert('User account created & signed in!')
+
+                    }
+                })
 
         } catch (error) {
             console.log('Message', JSON.stringify(error));
@@ -261,7 +286,7 @@ const Login = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-                onPress={() => { Register ? onsubmit() : User_Login() }}
+                onPress={() => { Register ? onsubmit() : User_Login(email, password) }}
                 style={[styles.buttonContainer, styles.loginButton]}>
                 <Text style={styles.loginText}>
                     {!Register ? 'Login' : 'SignUp'}
@@ -273,15 +298,7 @@ const Login = ({ navigation }) => {
                 style={styles.buttonContainer}>
                 <Text>{Register ? 'Login' : 'Register'}</Text>
             </TouchableOpacity>
-
-            {/* <TouchableOpacity
-                // onPress={() => Fb_Login()}
-                style={[styles.buttonContainer, styles.fabookButton]}>
-                <View style={styles.socialButtonContent}>
-                    <Image style={styles.icon} source={{ uri: 'https://png.icons8.com/facebook/androidL/40/FFFFFF' }} />
-                    <Text style={styles.loginText}>Continue with facebook</Text>
-                </View>
-            </TouchableOpacity> */}
+            <Loader loading={Loadding}></Loader>
             <LoginButton
                 readPermissions={['public_profile', 'email']}
                 permissions={["email"]}

@@ -5,6 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import Login from './Login';
 import Welcome from './Welcome';
+import UserList from './UserList';
+import Chat from './Chat';
 
 const Stack = createStackNavigator();
 
@@ -14,6 +16,8 @@ function Navigation() {
             <Stack.Navigator headerMode={'none'}>
                 <Stack.Screen name="Login" component={Login} />
                 <Stack.Screen name="Welcome" component={Welcome} />
+                <Stack.Screen name="UserList" component={UserList} />
+                <Stack.Screen name="Chat" component={Chat} />
             </Stack.Navigator>
         </NavigationContainer>
     );
