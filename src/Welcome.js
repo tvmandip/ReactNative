@@ -10,7 +10,6 @@ import database from '@react-native-firebase/database'
 import { GoogleSignin } from '@react-native-community/google-signin';
 import Loader from './Loader';
 import AntDesign from 'react-native-vector-icons/AntDesign'
-import UserList from './UserList';
 
 
 Welcome = ({ route, navigation }) => {
@@ -27,18 +26,16 @@ Welcome = ({ route, navigation }) => {
             console.error(error);
         }
         navigation.navigate('Login')
-        // setGettingLoginStatus(false);
     }
     useEffect(() => {
-        {
-            !User ? UserData() : null
-        }
+
         {
             !userLists ? UsersData() : null
         }
-        // console.log(User[0].id)
 
-    })
+
+    }, [])
+
     const UserData = () => {
         database()
             .ref('/users')
@@ -71,19 +68,55 @@ Welcome = ({ route, navigation }) => {
             })
     }
     const UsersData = () => {
-        database().ref('/users').on('value', (snapshot) => {
-            var li = []
-            snapshot.forEach((child) => {
-                li.push({
-                    key: child.key,
-                    name: child.val().name,
-                    pic: child.val().pic,
-                    email: child.val().email,
-                    id: child.val().userid
-                })
-                setUserList(li)
-            })
-        })
+        try {
+
+            database()
+                .ref("users")
+                .on("value", (dataSnapshot) => {
+                    let users = [];
+                    let currentUser = {
+                        id: "",
+                        name: "",
+                        profileImg: "",
+                        email: "",
+                    };
+                    dataSnapshot.forEach((child) => {
+                        if (data === child.val().email) {
+                            currentUser.id = child.val().userid;
+                            currentUser.name = child.val().name;
+                            currentUser.email = child.val().email;
+                            currentUser.profileImg = child.val().pic;
+                        } else {
+                            users.push({
+                                id: child.val().userid,
+                                name: child.val().name,
+                                profileImg: child.val().pic,
+                                email: child.val().email,
+                            });
+                        }
+                    });
+                    setUser(currentUser);
+                    setUserList(users);
+                    // console.log("User " + User);
+                    // console.log("UserList " + userLists);
+                });
+        } catch (error) {
+            alert(error);
+
+        }
+        // database().ref('/users').on('value', (snapshot) => {
+        //     var li = []
+        //     snapshot.forEach((child) => {
+        //         li.push({
+        //             key: child.key,
+        //             name: child.val().name,
+        //             pic: child.val().pic,
+        //             email: child.val().email,
+        //             id: child.val().userid
+        //         })
+        //         setUserList(li)
+        //     })
+        // })
     }
 
     const renderSeparator = () => (
@@ -103,14 +136,15 @@ Welcome = ({ route, navigation }) => {
                         <View>
                             <Image
                                 style={styles.avatar}
-                                source={{ uri: User[0].pic }}
+                                source={{ uri: User.profileImg }}
                             />
                         </View>
                         <View style={{ justifyContent: 'center', left: '50%', left: 120, top: 40 }}>
-                            <Text style={styles.name}>{User[0].name}</Text>
-                            <Text style={styles.description}>{User[0].email}</Text>
+                            <Text style={styles.name}>{User.name}</Text>
+                            <Text style={styles.description}>{User.email}</Text>
                         </View>
                         <AntDesign
+                            onPress={() => { Logout() }}
                             name="logout" size={30} color={"#FFF"}
                             style={{ position: 'absolute', right: 20, top: 50 }}
                         />
@@ -123,6 +157,7 @@ Welcome = ({ route, navigation }) => {
                     data={userLists}
                     keyExtractor={(item) => {
                         return item.id;
+                        console.log(item.id)
                     }}
                     renderItem={({ item }) => {
                         return (
@@ -130,11 +165,11 @@ Welcome = ({ route, navigation }) => {
                                 <View style={{ padding: 5 }}>
                                     <Image
                                         style={{ height: 50, width: 50, borderRadius: 50, }}
-                                        source={{ uri: item.pic }}
+                                        source={{ uri: item.profileImg }}
                                     />
                                 </View>
                                 <TouchableOpacity
-                                    onPress={() => { navigation.navigate('Chat', { rid: item.id, sid: User[0].id, name: User[0].name }) }}
+                                    onPress={() => { navigation.navigate('Chat', { name: User.name, rname: item.name, rid: item.id, sid: User.id }) }}
                                     style={{ padding: 5 }}
                                 >
                                     <Text style={{ fontSize: 15 }}>{item.name}</Text>

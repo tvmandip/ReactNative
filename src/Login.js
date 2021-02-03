@@ -21,10 +21,11 @@ import {
 } from 'react-native-fbsdk';
 
 import {
-    GoogleSignin,
+
     GoogleSigninButton,
     statusCodes,
 } from '@react-native-community/google-signin';
+import { GoogleSignin } from '@react-native-community/google-signin';
 import Loader from './Loader';
 
 const Login = ({ navigation }) => {
@@ -38,7 +39,6 @@ const Login = ({ navigation }) => {
     const [token, setToken] = useState('');
     const [profilePic, setProfilePic] = useState('');
     const [Loadding, setLoadding] = useState(false);
-    // const [response, set_response] = useState('');
 
     useEffect(() => {
         GoogleSignin.configure({
@@ -128,53 +128,51 @@ const Login = ({ navigation }) => {
     }
 
     const Fb_Login = async () => {
-        // fbLogin: async () => {
-        try {
-            // Attempt login with permissions
-            const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
-            console.log(result)
-            if (result.isCancelled) {
-                throw 'User cancelled the login process';
-            }
+        const result = await LoginManager.logInWithPermissions(['public_profile', 'email']);
 
-            // Once signed in, get the users AccesToken
-            const data = await AccessToken.getCurrentAccessToken();
-
-            if (!data) {
-                throw 'Something went wrong obtaining access token';
-            }
-
-            // Create a Firebase credential with the AccessToken
-            const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
-
-            // Sign-in the user with the credential
-            await auth().signInWithCredential(facebookCredential);
-        } catch (error) {
-            console.log({ error });
+        if (result.isCancelled) {
+            throw 'User cancelled the login process';
         }
+
+        // Once signed in, get the users AccesToken
+        const data = await AccessToken.getCurrentAccessToken();
+
+        if (!data) {
+            throw 'Something went wrong obtaining access token';
+        }
+
+        // Create a Firebase credential with the AccessToken
+        const facebookCredential = auth.FacebookAuthProvider.credential(data.accessToken);
+
+        // Sign-in the user with the credential
+        const F_User = await auth().signInWithCredential(facebookCredential);
+        console.log(JSON.stringify(F_User))
     }
 
     const Google_Login = async () => {
-
         try {
-            await GoogleSignin.hasPlayServices({
-                // Check if device has Google Play Services installed
-                // Always resolves to true on iOS
-                showPlayServicesUpdateDialog: true,
-            });
-            const userInfo = await GoogleSignin.signIn();
-            // navigation.navigate('Welcome', { data: userInfo });
-            console.log('User Info --> ', userInfo);
+            const { idToken } = await GoogleSignin.signIn();
+
+            // Create a Google credential with the token
+            const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+            // console.log('gooogle ' + JSON.stringify(googleCredential))
+            // Sign-in the user with the credential
+            const G_user = await auth().signInWithCredential(googleCredential)
+            console.log('gooogle ' + JSON.stringify(G_user.additionalUserInfo.profile.email))
+
             database()
                 .ref('/users')
                 .orderByChild("email")
-                .equalTo(email)
+                .equalTo(G_user.additionalUserInfo.profile.email)
                 .once("value")
                 .then(snapshot => {
                     if (snapshot.val()) {
-                        console.log("no")
+                        console.log("already user here")
                         console.log(snapshot.val())
+                        navigation.navigate('Welcome', { data: G_user.additionalUserInfo.profile.email })
                     } else {
+                        console.log("not user here")
+                        console.log(snapshot.val())
                         database()
                             .ref('/users')
                             .push({
@@ -184,26 +182,30 @@ const Login = ({ navigation }) => {
                                 registre_type: 'google',
                                 userid: userInfo.user.id
                             }).then((userInfo) => console.log('Data set.', JSON.stringify(userInfo)));
+                        navigation.navigate('Welcome', { data: userInfo.user.email })
                         console.log(Name + "  " + userInfo.user.email + "  " + userInfo.user.photoURL + "   " + userInfo.user.uid)
                         alert('User account created & signed in!')
-
                     }
                 })
-
         } catch (error) {
-            console.log('Message', JSON.stringify(error));
-            if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-                alert('User Cancelled the Login Flow');
-            } else if (error.code === statusCodes.IN_PROGRESS) {
-                alert('Signing In');
-            } else if (
-                error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
-            ) {
-                alert('Play Services Not Available or Outdated');
-            } else {
-                alert(error.message);
-            }
-        };
+            console.log(error)
+        }
+
+
+        // } catch (error) {
+        //     console.log('Message', JSON.stringify(error));
+        //     if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        //         alert('User Cancelled the Login Flow');
+        //     } else if (error.code === statusCodes.IN_PROGRESS) {
+        //         alert('Signing In');
+        //     } else if (
+        //         error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE
+        //     ) {
+        //         alert('Play Services Not Available or Outdated');
+        //     } else {
+        //         alert(error.message);
+        //     }
+        // };
     }
 
     const onLogout = () => {
@@ -332,11 +334,13 @@ const Login = ({ navigation }) => {
                     color={GoogleSigninButton.Color.Light}
                     onPress={() => { Google_Login() }}
                 />
+                {/* <TouchableOpacity onPress={() => { Google_Login() }}>
+                    <View style={styles.socialButtonContent}>
+                        <Image style={styles.icon} source={{ uri: 'https://png.icons8.com/google/androidL/40/FFFFFF' }} />
+                        <Text style={styles.loginText}>Sign in with google</Text>
+                    </View>
+                </TouchableOpacity> */}
 
-                {/* <View style={styles.socialButtonContent}>
-                    <Image style={styles.icon} source={{ uri: 'https://png.icons8.com/google/androidL/40/FFFFFF' }} />
-                    <Text style={styles.loginText}>Sign in with google</Text>
-                </View> */}
             </View>
         </View >
     );
