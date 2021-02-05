@@ -5,9 +5,9 @@ import { Bubble, GiftedChat, Send } from 'react-native-gifted-chat';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Icon from 'react-native-vector-icons/Ionicons'
-
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import database from '@react-native-firebase/database'
-
+import { senderMsg, recieverMsg } from './control_msg'
 
 
 const Chat = ({ route, navigation }) => {
@@ -25,70 +25,27 @@ const Chat = ({ route, navigation }) => {
     useEffect(() => {
         try {
             database()
-                .ref('/chats')
-                // .child(s_id)
+                .ref("Chats")
+                .child(s_id)
                 .child(r_id)
-                .on('value', (snapshot) => {
-                    console.log(snapshot.val())
-                    var msgs = []
-                    snapshot.forEach((child) => {
+                .on("value", (dataSnapshot) => {
+                    console.log(JSON.stringify(dataSnapshot))
+                    let msgs = [];
+                    dataSnapshot.forEach((child) => {
                         msgs.push({
-                            key: child.key,
-                            msg: child.val().msg.text,
-                            // id: child.val().meg._id,
-                            Rid: child.val().msg.r_id,
-                            Sid: child.val().msg.s_id
-                        })
-                        console.log("Chats " + JSON.stringify(msgs))
-                        setMessages(msgs)
-                    })
-
+                            sendBy: child.val().messege.sender,
+                            recievedBy: child.val().messege.reciever,
+                            msg: child.val().messege.msg,
+                            time: child.val().messege.createdAt,
+                        });
+                    });
+                    setMessages(msgs)
+                    // console.log(msgs)
                 })
         } catch (error) {
             alert(error);
         }
-        // setMessages([
-        //     {
-        //         _id: 1,
-        //         text: 'Hello developer',
-        //         createdAt: new Date(),
-        //         user: {
-        //             _id: 2,
-        //             name: 'React Native',
-        //             avatar: 'https://placeimg.com/140/140/any',
-        //         },
-        //     },
-        //     {
-        //         _id: 2,
-        //         text: 'Hello world',
-        //         createdAt: new Date(),
-        //         user: {
-        //             _id: 1,
-        //             name: 'React Native',
-        //             avatar: 'https://placeimg.com/140/140/any',
-        //         },
-        //     },
-        //     {
-        //         _id: 3,
-        //         text: 'Hello abc',
-        //         createdAt: new Date(),
-        //         user: {
-        //             _id: 2,
-        //             name: 'React Native',
-        //             avatar: 'https://placeimg.com/140/140/any',
-        //         },
-        //     },
-        //     {
-        //         _id: 6,
-        //         text: 'Hello abc',
-        //         createdAt: new Date(),
-        //         user: {
-        //             _id: 2,
-        //             name: 'React Native',
-        //             avatar: 'https://placeimg.com/140/140/any',
-        //         },
-        //     },
-        // ]);
+
     }, []);
 
     const messageIdGenerator = () => {
@@ -100,103 +57,55 @@ const Chat = ({ route, navigation }) => {
         });
     }
 
-    // const onSend = useCallback((messages = []) => {
-    //     // setMessages((previousMessages) =>
-    //     //     GiftedChat.append(previousMessages, messages),
-    //     // );
-
-    //     const message = {};
-    //     message._id = messageIdGenerator(),
-    //         message.createdAt = Date.now(),
-    //         message.text = msg,
-    //         message.r_id = r_id,
-    //         message.s_id = s_id
-    //     // message.user = {
-    //     //     _id: r_id,
-    //     //     name: R_Name
-    //     // }
-    //     database()
-    //         .ref('/chats')
-    //         .push({
-    //             // name: Name,
-    //             // sender_id: s_id,
-    //             // receiver_id: r_id,
-    //             message: message,
-
-    //         }).then((res) => console.log('Data set.', JSON.stringify(res)));
-
-
-    // }, []);
     const onSend = () => {
-        const message = {};
+
+        setmsg('')
+        if (msg) {
+            senderMsg(msg, s_id, r_id)
+                .then(() => { })
+                .catch((err) => alert(err));
+
+            // * guest user
+
+            recieverMsg(msg, s_id, r_id)
+                .then(() => { })
+                .catch((err) => alert(err));
+        }
 
         // message._id = messageIdGenerator(),
-        message.createdAt = Date.now(),
-            message.text = msg,
-            message.r_id = r_id,
-            message.s_id = s_id
+        // message.createdAt = Date.now(),
+        //     message.msg = msg,
+        //     message.reciever = r_id,
+        //     message.sender = s_id
 
-        database()
-            .ref('chats/' + r_id)
-            .push({
-                s_id,
-                msg: message
-
-
-            }).then((res) => console.log('Data set.', JSON.stringify(res)), setmsg(''));
+        // database()
+        //     .ref('chats/' + s_id)
+        //     .child(r_id)
+        //     .push({
+        //         messege: {
+        //             sender: s_id,
+        //             reciever: r_id,
+        //             msg: msg,
+        //             createdAt: Date.now()
+        //         }
+        //     }).then((res) => console.log('message set.', JSON.stringify(res)), setmsg(''));
     }
 
-    const renderSend = (props) => {
-        return (
-            <Send {...props}>
-                <View>
-                    <MaterialCommunityIcons
-                        name="send-circle"
-                        style={{ marginBottom: 5, marginRight: 5 }}
-                        size={40}
-                        color="#2e64e5"
-                    />
-                </View>
-            </Send>
-        );
-    };
+    const send_image = () => {
 
-    const renderBubble = (props) => {
-        return (
-            <Bubble
-                {...props}
-                wrapperStyle={{
-                    right: {
-                        backgroundColor: '#2e64e5',
-                    },
-                }}
-                textStyle={{
-                    right: {
-                        color: '#fff',
-                    },
-                }}
-                {...props}
-                wrapperStyle={{
-                    left: {
-                        backgroundColor: '#2e64e5',
-                    },
-                }}
-                textStyle={{
-                    left: {
-                        color: 'white',
-                    },
-                }}
-            />
-        );
-    };
-
-    const scrollToBottomComponent = () => {
-        return (
-            <FontAwesome name='angle-double-down' size={22} color='#333' />
-        );
+        launchImageLibrary(
+            {
+                mediaType: 'photo',
+                includeBase64: false,
+                maxHeight: 200,
+                maxWidth: 200,
+                quality: 0.8
+            },
+            (response) => {
+                console.log(response);
+            },
+        )
     }
-
-
     return (
         <View style={styles.container}>
             <View style={{
@@ -211,22 +120,21 @@ const Chat = ({ route, navigation }) => {
                     {R_Name}
                 </Text>
             </View>
-            <FlatList style={styles.list}
+            <FlatList
+                style={styles.list}
                 data={messages}
-                keyExtractor={(item) => {
-                    return item.id;
-                }}
+                keyExtractor={(_, index) => index.toString()}
                 renderItem={(message) => {
 
                     const item = message.item;
-                    let inMessage = item.Sid === s_id;
+                    let inMessage = item.sendBy === s_id;
                     let itemStyle = inMessage ? styles.itemOut : styles.itemIn;
                     return (
                         <View style={[styles.item, itemStyle]}>
-                            {/* {!inMessage && this.renderDate(item.date)} */}
-                            {console.log(item)}
+
                             <View style={[styles.balloon]}>
-                                <Text>{item.msg}</Text>
+                                <Text style={{ fontSize: 15 }}>{item.msg}</Text>
+                                <Text style={styles.time}>{item.time}</Text>
                             </View>
 
                         </View>
@@ -240,7 +148,11 @@ const Chat = ({ route, navigation }) => {
                         value={msg}
                         onChangeText={(msg) => setmsg(msg)} />
                 </View>
-
+                <Icon
+                    name="ios-camera-outline"
+                    color="black" size={30} style={{ padding: 5 }}
+                    onPress={() => { send_image() }}
+                />
                 <TouchableOpacity
                     onPress={() => { onSend() }}
                     style={styles.btnSend}>
@@ -260,7 +172,7 @@ const styles = StyleSheet.create({
         flex: 1
     },
     list: {
-        paddingHorizontal: 17,
+        paddingHorizontal: 15,
     },
     footer: {
         flexDirection: 'row',
@@ -301,7 +213,7 @@ const styles = StyleSheet.create({
     },
     balloon: {
         maxWidth: 250,
-        padding: 15,
+        padding: 10,
         borderRadius: 20,
     },
     itemIn: {
@@ -312,12 +224,12 @@ const styles = StyleSheet.create({
     },
     time: {
         alignSelf: 'flex-end',
-        margin: 15,
-        fontSize: 12,
+        // margin: 15,
+        fontSize: 10,
         color: "#808080",
     },
     item: {
-        marginVertical: 14,
+        marginVertical: 3,
         flex: 1,
         flexDirection: 'row',
         backgroundColor: "#eeeeee",
