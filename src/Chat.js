@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView, Text, Button, StyleSheet, TextInput, TouchableOpacity, FlatList, Image } from 'react-native';
 import { Bubble, GiftedChat, Send } from 'react-native-gifted-chat';
-
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker'
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 import Icon from 'react-native-vector-icons/Ionicons'
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+
 import database from '@react-native-firebase/database'
 import { senderMsg, recieverMsg } from './control_msg'
 
@@ -37,6 +37,7 @@ const Chat = ({ route, navigation }) => {
                             recievedBy: child.val().messege.reciever,
                             msg: child.val().messege.msg,
                             time: child.val().messege.createdAt,
+                            img: child.val().messege.img,
                         });
                     });
                     setMessages(msgs)
@@ -48,26 +49,85 @@ const Chat = ({ route, navigation }) => {
 
     }, []);
 
-    const messageIdGenerator = () => {
-        // generates uuid.
-        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
-            let r = (Math.random() * 16) | 0,
-                v = c == "x" ? r : (r & 0x3) | 0x8;
-            return v.toString(16);
-        });
+
+
+    const Send_img = () => {
+
+        launchImageLibrary(
+            {
+                mediaType: 'photo',
+                includeBase64: true,
+                maxHeight: 200,
+                maxWidth: 200,
+
+            },
+            (response) => {
+                if (response.didCancel) {
+                    console.log("User cancel image picker");
+                } else if (response.error) {
+                    console.log(" image picker error", response.error);
+                } else {
+                    console.log(response.base64);
+                    let source = "data:image/jpeg;base64," + response.base64;
+
+                    senderMsg(msg, s_id, r_id, source)
+                        .then(() => { })
+                        .catch((err) => alert(err));
+
+                    // * guest user
+
+                    recieverMsg(msg, s_id, r_id, source)
+                        .then(() => { })
+                        .catch((err) => alert(err));
+                }
+            },
+        )
+
+    }
+
+    const Take_pic = () => {
+        launchCamera(
+
+            {
+                mediaType: 'photo',
+                includeBase64: true,
+                maxHeight: 200,
+                maxWidth: 200,
+
+            },
+            (response) => {
+                if (response.didCancel) {
+                    console.log("User cancel image picker");
+                } else if (response.error) {
+                    console.log(" image picker error", response.error);
+                } else {
+                    console.log("take img from camera" + response.base64);
+                    let source = "data:image/jpeg;base64," + response.base64;
+                    senderMsg(msg, s_id, r_id, source)
+                        .then(() => { })
+                        .catch((err) => alert(err));
+
+                    // * guest user
+
+                    recieverMsg(msg, s_id, r_id, source)
+                        .then(() => { })
+                        .catch((err) => alert(err));
+                }
+            }
+        )
     }
 
     const onSend = () => {
 
         setmsg('')
         if (msg) {
-            senderMsg(msg, s_id, r_id)
+            senderMsg(msg, s_id, r_id, "")
                 .then(() => { })
                 .catch((err) => alert(err));
 
             // * guest user
 
-            recieverMsg(msg, s_id, r_id)
+            recieverMsg(msg, s_id, r_id, "")
                 .then(() => { })
                 .catch((err) => alert(err));
         }
@@ -91,21 +151,8 @@ const Chat = ({ route, navigation }) => {
         //     }).then((res) => console.log('message set.', JSON.stringify(res)), setmsg(''));
     }
 
-    const send_image = () => {
 
-        launchImageLibrary(
-            {
-                mediaType: 'photo',
-                includeBase64: false,
-                maxHeight: 200,
-                maxWidth: 200,
-                quality: 0.8
-            },
-            (response) => {
-                console.log(response);
-            },
-        )
-    }
+
     return (
         <View style={styles.container}>
             <View style={{
@@ -130,14 +177,22 @@ const Chat = ({ route, navigation }) => {
                     let inMessage = item.sendBy === s_id;
                     let itemStyle = inMessage ? styles.itemOut : styles.itemIn;
                     return (
-                        <View style={[styles.item, itemStyle]}>
-
-                            <View style={[styles.balloon]}>
-                                <Text style={{ fontSize: 15 }}>{item.msg}</Text>
-                                <Text style={styles.time}>{item.time}</Text>
+                        <View>
+                            <View style={[styles.item, itemStyle]}>
+                                {
+                                    item.img ?
+                                        <Image
+                                            source={{ uri: item.img }}
+                                            style={{ height: 180, width: 180 }}
+                                        />
+                                        : <View style={[styles.balloon]}>
+                                            <Text style={{ fontSize: 15 }}>{item.msg}</Text>
+                                            <Text style={styles.time}>{item.time}</Text>
+                                        </View>
+                                }
                             </View>
-
                         </View>
+
                     )
                 }} />
             <View style={styles.footer}>
@@ -148,10 +203,15 @@ const Chat = ({ route, navigation }) => {
                         value={msg}
                         onChangeText={(msg) => setmsg(msg)} />
                 </View>
+                <AntDesign
+                    name="picture"
+                    color="black" size={30} style={{ padding: 5 }}
+                    onPress={() => { Take_pic() }}
+                />
                 <Icon
                     name="ios-camera-outline"
                     color="black" size={30} style={{ padding: 5 }}
-                    onPress={() => { send_image() }}
+                    onPress={() => { Send_img() }}
                 />
                 <TouchableOpacity
                     onPress={() => { onSend() }}
@@ -237,3 +297,14 @@ const styles = StyleSheet.create({
         padding: 5,
     }
 });
+
+
+
+// const messageIdGenerator = () => {
+//     // generates uuid.
+//     return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+//         let r = (Math.random() * 16) | 0,
+//             v = c == "x" ? r : (r & 0x3) | 0x8;
+//         return v.toString(16);
+//     });
+// }

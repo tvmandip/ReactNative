@@ -1,7 +1,7 @@
 import database from '@react-native-firebase/database'
 var hours = new Date().getHours();
 var min = new Date().getMinutes();
-export const senderMsg = async (msg, s_id, r_id) => {
+export const senderMsg = async (msg, s_id, r_id, img) => {
     try {
         return await
             database()
@@ -12,7 +12,8 @@ export const senderMsg = async (msg, s_id, r_id) => {
                         sender: s_id,
                         reciever: r_id,
                         msg: msg,
-                        createdAt: hours + ":" + min
+                        createdAt: hours + ":" + min,
+                        img: img,
                     },
                 });
     } catch (error) {
@@ -20,12 +21,7 @@ export const senderMsg = async (msg, s_id, r_id) => {
     }
 };
 
-export const recieverMsg = async (
-    msg,
-    s_id,
-    r_id,
-
-) => {
+export const recieverMsg = async (msg, s_id, r_id, img) => {
     try {
         return await
             database()
@@ -36,7 +32,8 @@ export const recieverMsg = async (
                         sender: s_id,
                         reciever: r_id,
                         msg: msg,
-                        createdAt: hours + ":" + min
+                        createdAt: hours + ":" + min,
+                        img: img,
                     },
                 });
     } catch (error) {
